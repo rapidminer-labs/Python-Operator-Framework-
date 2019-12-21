@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="UTF-8"?><process version="9.4.000-SNAPSHOT">
+  <context>
+    <input/>
+    <output/>
+    <macros/>
+  </context>
+  <operator activated="true" class="process" compatibility="9.4.000-SNAPSHOT" expanded="true" name="Process">
+    <parameter key="logverbosity" value="init"/>
+    <parameter key="random_seed" value="2001"/>
+    <parameter key="send_mail" value="never"/>
+    <parameter key="notification_email" value=""/>
+    <parameter key="process_duration_for_mail" value="30"/>
+    <parameter key="encoding" value="SYSTEM"/>
+    <process expanded="true">
+      <operator activated="true" class="python_operator_framework:create_python_learner" compatibility="0.0.005-SNAPSHOT" expanded="true" height="82" name="Create Learner Object (2)" width="90" x="45" y="85">
+        <parameter key="description" value="Train SGD Classifier"/>
+        <parameter key="train script" value="from sklearn import linear_model&#10;&#10;import numpy as np&#10;import pandas as pd&#10;&#10;&#10;&#10;def wrapOutputHTML(model,features,label):&#10;&#9;&#10;&#9;outputs = '&lt;h3&gt;&lt;span color=\'red\'&gt;&lt;h1&gt; name of features&lt;/h1&gt; &lt;br&gt;'&#10;&#9;for col in features.columns: &#10;&#9;&#9;outputs += str(col)&#10;&#9;&#9;outputs += ' -- '&#10;&#9;&#9;#outputs += str(coef_dict[col] )&#10;&#9;outputs += '&lt;/span&gt;&lt;/h3&gt;'&#10;&#9;outputs += &quot;&lt;br&gt;&lt;h2&gt; Model Coef&lt;/h2&gt;&lt;br&gt;&quot;&#10;&#9;dataFrame = pd.DataFrame.from_records(model.coef_).T&#10;&#9;outputs +=  dataFrame.to_html().replace(&quot;\n&quot;,&quot;&quot;).strip()&#10;&#9;outputs += &quot;&lt;br&gt;&quot;&#10;&#9;outputs += &quot;&lt;br&gt;&quot;&#10;&#9;outputs += '&lt;img src=\'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTnVrff5_gy-Er2lob9Q3hkgDq8HhysOPSMMoECw_VuOtyDApkD&amp;s\'&gt;'&#10;&#9;return outputs&#10;&#10;def separate_features_labels(data):&#10;&#9;&quot;&quot;&quot;&#10;&#9;Using the RapidMiner attribute metadata, separates features and labels in the DataFrame passed as argument.&#10;&#10;&#9;Parameters&#10;&#9;----------&#10;&#9;data : pd.DataFrame&#10;&#9;&#9;Dataset.&#10;&#10;&#9;Returns&#10;&#9;-------&#10;&#9;features&#10;&#9;&#9;pd.DataFrame with features to train the SGD classifier on.&#10;&#9;labels&#10;&#9;&#9;pd.DataFrame with labels to pass to the SGD classifier during training.&#10;&#9;&quot;&quot;&quot;&#10;&#10;&#9;for name in data.columns.values:&#10;&#9;&#9;attribute_type, attribute_role = data.rm_metadata[name]&#10;&#10;&#9;&#9;if attribute_role == 'label':&#10;&#9;&#9;&#9;labels = data[name]&#10;&#10;&#9;features = data.drop(labels.name, axis=1)&#10;&#10;&#9;return features, labels&#10;&#10;def process_params(params):&#10;&#9;for i in params.index:&#10;&#9;&#9;print(params['type'][i])&#10;&#9;&#9;if (params['type'][i] == 'ParameterTypeInt'):&#10;&#9;&#9;&#9;params['value'][i] = int(params['value'][i])&#10;&#9;&#9;elif (params['type'][i] == 'ParameterTypeString'):&#10;&#9;&#9;&#9;params['value'][i] = processString(params['value'][i])&#10;&#9;&#9;elif (params['type'][i] == 'ParameterTypeDouble'):&#10;&#9;&#9;&#9;params['value'][i] = float(params['value'][i])&#10;&#9;&#9;elif (params['type'][i] == 'ParameterTypeBoolean'):&#10;&#9;&#9;&#9;params['value'][i] = bool(params['value'][i])&#10;&#9;&#9;elif (params['type'][i] == 'ParameterTypeStringCategory'):&#10;&#9;&#9;&#9;params['value'][i] = processString(params['value'][i])&#10;&#9;&#9;elif (params['type'][i] == 'ParameterTypeCategory'):&#10;&#9;&#9;&#9;params['value'][i] = processString(params['value'][i])&#10;&#10;&#9;&#10;&#9;params_dict = dict(zip(params.key,params.value))&#10;&#9;#replace string None with KeyWord None&#10;&#9;#for key,value in params_dict.items():&#10;&#9;#&#9;if value == 'None':&#10;&#9;#&#9;&#9;params_dict[key] = None&#10;&#9;return params_dict&#10;&#10;&#10;def processString(strvalue):&#10;&#9;if(strvalue == 'None'):&#10;&#9;&#9;strvalue = None&#10;&#9;return strvalue&#10;&#9;&#10;def rm_main(params,data):&#10;&#9;print(data.head())&#10;&#9;print(params)&#10;&#9;&quot;&quot;&quot;&#10;&#9;Fits the linear SGD classifier.&#10;&#10;&#9;Parameters&#10;&#9;----------&#10;&#9;data : pd.DataFrame&#10;&#9;&#9;DataFrame created from the RapidMiner ExampleSet by the Execute Python operator.&#10;&#10;&#9;Returns&#10;&#9;-------&#10;&#9;model&#10;&#9;&#9;Fitted SGD classifier.&#10;&#9;data&#10;&#9;&#9;pd.DataFrame passed as argument.&#10;&#9;&quot;&quot;&quot;&#10;&#9;params_dict = process_params(params)&#10;&#9;features, labels = separate_features_labels(data)&#10;&#9;print(&quot;$$$$$$$$$$$$$$$&quot;)&#10;&#9;print(params_dict)&#10;&#9;print(&quot;$$$$$$$$$$$$$$$&quot;)&#10;&#9;clf = linear_model.SGDClassifier(loss=params_dict['loss'], penalty=params_dict['penalty'], alpha=params_dict['alpha'],&#10;&#9;&#9;&#9;&#9;&#9;&#9;&#9;&#9;&#9;l1_ratio=params_dict['l1_ratio'], fit_intercept=params_dict['fit_intercept'],&#10;&#9;&#9;&#9;&#9;&#9;&#9;&#9;&#9;&#9;max_iter=params_dict['max_iter'], shuffle=params_dict['shuffle'], verbose=params_dict['verbose'],&#10;&#9;&#9;&#9;&#9;&#9;&#9;&#9;&#9;&#9;epsilon=params_dict['epsilon'], random_state=1,&#10;&#9;&#9;&#9;&#9;&#9;&#9;&#9;&#9;&#9;learning_rate=params_dict['learning_rate'], eta0=params_dict['eta0'],&#10;&#9;&#9;&#9;&#9;&#9;&#9;&#9;&#9;&#9;power_t=params_dict['power_t'], class_weight=params_dict['class_weight'], warm_start=params_dict['warm_start'],&#10;&#9;&#9;&#9;&#9;&#9;&#9;&#9;&#9;&#9;average=params_dict['average'])&#10;&#9;model = clf.fit(np.array(features), np.array(labels))&#10;&#9;print(model)&#10;&#9;return model, wrapOutputHTML(model,features,labels)"/>
+        <parameter key="apply script" value="from statsmodels.tsa.arima_model import ARIMA&#10;&#10;import numpy as np&#10;import pandas as pd&#10;&#10;package_dict = {'LabelPropagation': 'scikit-learn', 'PassiveAggressiveClassifier': 'scikit-learn',&#10;&#9;&#9;&#9;&#9;'SGDClassifier': 'scikit-learn', 'SGDRegressor': 'scikit-learn', 'Earth': 'scikit-learn',&#10;&#9;&#9;&#9;&#9;'SMOTE': 'scikit-learn', 'ARIMAResultsWrapper': 'statsmodels'}&#10;&#10;def rm_main(stored_model, data):&#10;&#9;&quot;&quot;&quot;&#10;&#9;Applies a scikit-learn or statsmodels model to previously unseen data.&#10;&#10;&#9;Parameters&#10;&#9;----------&#10;&#9;stored_model&#10;&#9;&#9;Trained scikit-learn or statsmodels model.&#10;&#9;data : pd.DataFrame&#10;&#9;&#9;DataFrame with data to perform predictions on.&#10;&#10;&#9;Returns&#10;&#9;-------&#10;&#9;data&#10;&#9;&#9;DataFrame with model predictions.&#10;&#9;stored_model&#10;&#9;&#9;Trained scikit-learn or statsmodels model passed in method arguments.&#10;&#9;&quot;&quot;&quot;&#10;&#9;package_name = get_package_name(stored_model)&#10;&#9;if package_name == 'scikit-learn':&#10;&#9;&#9;data, stored_model = apply_sklearn(stored_model, data)&#10;&#9;elif package_name == 'statsmodels':&#10;&#9;&#9;data, stored_model = apply_statsmodels(stored_model, data)&#10;&#10;&#9;return data&#10;&#10;def get_package_name(stored_model):&#10;&#9;&quot;&quot;&quot;&#10;&#9;Returns the package name of the stored_model in order to call the right method for performing classification or&#10;&#9;regression. The methods are different for models in scikit-learn and statsmodels packages.&#10;&#9;&quot;&quot;&quot;&#10;&#9;return package_dict[type(stored_model).__name__]&#10;&#10;&#10;def preprocessing_sklearn(data):&#10;&#9;&quot;&quot;&quot;&#10;&#9;Using the RapidMiner attribute metadata, separates features and labels/targets in the DataFrame passed as argument.&#10;&#10;&#9;Parameters&#10;&#9;----------&#10;&#9;data : pd.DataFrame&#10;&#9;&#9;Dataset.&#10;&#10;&#9;Returns&#10;&#9;-------&#10;&#9;features&#10;&#9;&#9;pd.DataFrame with features to fit the model on.&#10;&#9;labels&#10;&#9;&#9;pd.DataFrame with labels/targets to pass to the model during training.&#10;&#9;&quot;&quot;&quot;&#10;&#9;for name in data.columns.values:&#10;&#9;&#9;attribute_type, attribute_role = data.rm_metadata[name]&#10;&#10;&#9;&#9;if attribute_role == 'label':&#10;&#9;&#9;&#9;labels = data[name]&#10;&#10;&#9;features = data.drop(labels.name, axis=1)&#10;&#9;&#10;&#9;return features, labels&#10;&#10;&#10;def apply_sklearn(stored_model, data):&#10;&#9;&quot;&quot;&quot;&#10;&#9;Applies a scikit-learn model to previously unseen data.&#10;&#10;&#9;Parameters&#10;&#9;----------&#10;&#9;stored_model&#10;&#9;&#9;Trained scikit-learn model.&#10;&#9;data : pd.DataFrame&#10;&#9;&#9;DataFrame with data to perform predictions on.&#10;&#10;&#9;Returns&#10;&#9;-------&#10;&#9;data&#10;&#9;&#9;DataFrame with model predictions.&#10;&#9;stored_model&#10;&#9;&#9;Trained scikit-learn model passed in method arguments.&#10;&#9;&quot;&quot;&quot;&#10;&#9;features, labels = preprocessing_sklearn(data)&#10;&#10;&#9;predicted_labels = pd.DataFrame(stored_model.predict(features))&#10;&#9;predictionColumnName = 'Prediction(' +  labels.name + ')'&#10;&#9;data[predictionColumnName] = predicted_labels&#10;&#9;data.rm_metadata[predictionColumnName] = (data.rm_metadata[labels.name][0],&quot;prediction&quot;)&#10;&#9;data.rm_metadata[labels.name] = (data.rm_metadata[labels.name][0],&quot;label&quot;)&#10;&#9;return data, stored_model&#10;&#10;&#10;def __getnewargs__(self):&#10;&#9;&quot;&quot;&quot;&#10;&#9;Overrides a method that causes a bug when trying to serialise the ARIMA model.&#10;&#9;&quot;&quot;&quot;&#10;&#9;return ((self.endog), (self.k_lags, self.k_diff, self.k_ma))&#10;&#10;&#10;def preprocessing_statsmodels(data):&#10;&#9;&quot;&quot;&quot;&#10;&#9;Preprocesses the data to prepare for performing prediction with the ARIMA model.&#10;&#10;&#9;Parameters&#10;&#9;----------&#10;&#9;data : pd.DataFrame&#10;&#9;&#9;DataFrame with the dataset.&#10;&#9;Returns&#10;&#9;----------&#10;&#9;date_time_column&#10;&#9;&#9;pd.Series with date_time data.&#10;&#9;prediction_column&#10;&#9;&#9;pd.Series with target data.&#10;&#9;&quot;&quot;&quot;&#10;&#9;date_time_column = pd.Series()&#10;&#9;prediction_column = pd.Series()&#10;&#10;&#9;for name in data.columns.values:&#10;&#9;&#9;attribute_type, attribute_role = data.rm_metadata[name]&#10;&#10;&#9;&#9;if attribute_type == 'date_time':&#10;&#9;&#9;&#9;date_time_column = data[name]&#10;&#9;&#9;if attribute_role == 'prediction':&#10;&#9;&#9;&#9;prediction_column = data[name]&#10;&#10;&#9;return date_time_column, prediction_column&#10;&#10;&#10;def apply_statsmodels(model, data):&#10;&#9;&quot;&quot;&quot;&#10;&#9; Performs out-of-sample forecast on data.&#10;&#10;&#9; Parameters&#10;&#9; ----------&#10;&#9; model : statsmodels.tsa.arima_model.ARIMA&#10;&#9;&#9;Pre-trained ARIMA model.&#10;&#9; data : pd.DataFrame&#10;&#9;&#9;DataFrame with data on which to forecast.&#10;&#10;&#9; Returns&#10;&#9; -------&#10;&#9; result_df&#10;&#9;&#9; DataFrame with out-of-sample forecasts.&#10;&#9; model&#10;&#9;&#9; Fitted ARIMA model.&#10;&#9; &quot;&quot;&quot;&#10;&#9;ARIMA.__getnewargs__ = __getnewargs__&#10;&#10;&#9;date_time_column, prediction_column = preprocessing_statsmodels(data)&#10;&#9;start = date_time_column.iloc[0]&#10;&#9;end = date_time_column.iloc[-1]&#10;&#10;&#9;predictions = model.predict(start=start, end=end, typ='levels')&#10;&#9;result_df = pd.DataFrame(data=predictions.values, columns=[prediction_column.name])&#10;&#9;result_df[date_time_column.name] = date_time_column&#10;&#9;result_df.rm_metadata = {date_time_column.name: ('date_time', 'id'), prediction_column.name: ('real', 'prediction')}&#10;&#10;&#9;return result_df, model&#10;&#10;&#10;"/>
+        <parameter key="params XML definition" value="&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;&#10;&lt;model name=&quot;SGDClassifier&quot;&gt;&#10;&#9;&lt;parameter name=&quot;loss&quot; is_keyword=&quot;true&quot;&gt;&#10;&#9;&#9;&lt;description&gt;The loss function to be used. Defaults to ‘hinge’, which gives a linear SVM. The ‘log’ loss gives logistic regression, a probabilistic classifier. ‘modified_huber’ is another smooth loss that brings tolerance to outliers as well as probability estimates. ‘squared_hinge’ is like hinge but is quadratically penalized. ‘perceptron’ is the linear loss used by the perceptron algorithm. The other losses are designed for regression but can be useful in classification as well&lt;/description&gt;&#10;&#9;&#9;&lt;type&gt;string&lt;/type&gt;&#10;        &lt;value&gt;hinge&lt;/value&gt;&#10;        &lt;value&gt;log&lt;/value&gt;&#10;        &lt;value&gt;modified_huber&lt;/value&gt;&#10;        &lt;value&gt;squared_hinge&lt;/value&gt;&#10;        &lt;value&gt;perceptron&lt;/value&gt;&#10;&#9;&#9;&lt;value&gt;squared_loss&lt;/value&gt;&#10;&#9;&#9;&lt;value&gt;huber&lt;/value&gt;&#10;&#9;&#9;&lt;value&gt;epsilon_insensitive&lt;/value&gt;&#10;&#9;&#9;&lt;value&gt;squared_epsilon_insensitive&lt;/value&gt;&#10;&#9;&#9;&lt;default&gt;hinge&lt;/default&gt;&#10;&#9;&lt;/parameter&gt;&#10;&#9;&lt;parameter name=&quot;epsilon&quot; parent=&quot;loss&quot; is_keyword=&quot;true&quot;&gt;&#10;&#9;&#9;&lt;description&gt;Epsilon in the epsilon-insensitive loss functions.&lt;/description&gt;&#10;&#9;&#9;&lt;activation_value&gt;huber&lt;/activation_value&gt;&#10;&#9;&#9;&lt;activation_value&gt;epsilon_insensitive&lt;/activation_value&gt;&#10;&#9;&#9;&lt;activation_value&gt;squared_epsilon_insensitive&lt;/activation_value&gt;&#10;&#9;&#9;&lt;type&gt;float&lt;/type&gt;&#10;&#9;&#9;&lt;min&gt;0&lt;/min&gt;&#10;&#9;&#9;&lt;max&gt;Double.POSITIVE_INFINITY&lt;/max&gt;&#10;&#9;&#9;&lt;default&gt;0.01&lt;/default&gt;&#10;&#9;&lt;/parameter&gt;&#10;&#9;&lt;parameter name=&quot;penalty&quot; is_keyword=&quot;true&quot;&gt;&#10;&#9;&#9;&lt;description&gt;The penalty to be used.&lt;/description&gt;&#10;&#9;&#9;&lt;type&gt;string&lt;/type&gt;&#10;&#9;&#9;&lt;value&gt;None&lt;/value&gt;&#10;&#9;&#9;&lt;value&gt;l2&lt;/value&gt;&#10;&#9;&#9;&lt;value&gt;l1&lt;/value&gt;&#10;&#9;&#9;&lt;value&gt;elasticnet&lt;/value&gt;&#10;&#9;&#9;&lt;default&gt;l2&lt;/default&gt;&#10;&#9;&lt;/parameter&gt;&#10;&#9;&lt;parameter name=&quot;alpha&quot; is_keyword=&quot;true&quot;&gt;&#10;&#9;&#9;&lt;description&gt;Constant that multiplies the regularization term.&lt;/description&gt;&#10;&#9;&#9;&lt;type&gt;float&lt;/type&gt;&#10;&#9;&#9;&lt;min&gt;0&lt;/min&gt;&#10;&#9;&#9;&lt;max&gt;Double.POSITIVE_INFINITY&lt;/max&gt;&#10;&#9;&#9;&lt;default&gt;0.0001&lt;/default&gt;&#10;&#9;&lt;/parameter&gt;&#10;&#9;&lt;parameter name=&quot;l1_ratio&quot; is_keyword=&quot;true&quot;&gt;&#10;&#9;&#9;&lt;description&gt;Elastic net mixing parameter.&lt;/description&gt;&#10;&#9;&#9;&lt;type&gt;float&lt;/type&gt;&#10;&#9;&#9;&lt;min&gt;0&lt;/min&gt;&#10;&#9;&#9;&lt;max&gt;1&lt;/max&gt;&#10;&#9;&#9;&lt;default&gt;0.15&lt;/default&gt;&#10;&#9;&lt;/parameter&gt;&#10;&#9;&lt;parameter name=&quot;fit_intercept&quot; is_keyword=&quot;true&quot;&gt;&#10;&#9;&#9;&lt;description&gt;Whether the intercept should be estimated or not. If False, the data is assumed to be already centered.&lt;/description&gt;&#10;&#9;&#9;&lt;type&gt;bool&lt;/type&gt;&#10;&#9;&#9;&lt;default&gt;True&lt;/default&gt;&#10;&#9;&lt;/parameter&gt;&#10;&#9;&lt;parameter name=&quot;max_iter&quot; is_keyword=&quot;true&quot;&gt;&#10;&#9;&#9;&lt;description&gt;The maximum number of passes over the training data (aka epochs).&lt;/description&gt;&#10;&#9;&#9;&lt;type&gt;int&lt;/type&gt;&#10;&#9;&#9;&lt;min&gt;1&lt;/min&gt;&#10;&#9;&#9;&lt;max&gt;Integer.MAX_VALUE&lt;/max&gt;&#10;&#9;&#9;&lt;default&gt;5&lt;/default&gt;&#10;&#9;&lt;/parameter&gt;&#10;&#9;&lt;parameter name=&quot;shuffle&quot; is_keyword=&quot;true&quot;&gt;&#10;&#9;&#9;&lt;description&gt;Whether the training data should be shuffled after each epoch.&lt;/description&gt;&#10;&#9;&#9;&lt;type&gt;bool&lt;/type&gt;&#10;&#9;&#9;&lt;default&gt;False&lt;/default&gt;&#10;&#9;&lt;/parameter&gt;&#10;&#9;&lt;parameter name=&quot;verbose&quot; is_keyword=&quot;true&quot;&gt;&#10;&#9;&#9;&lt;description&gt;Verbosity level.&lt;/description&gt;&#10;&#9;&#9;&lt;type&gt;int&lt;/type&gt;&#10;        &lt;min&gt;0&lt;/min&gt;&#10;        &lt;max&gt;Integer.MAX_VALUE&lt;/max&gt;&#10;&#9;&#9;&lt;default&gt;0&lt;/default&gt;&#10;&#9;&lt;/parameter&gt;&#10;&#9;&lt;parameter name=&quot;random_state&quot; is_keyword=&quot;true&quot;&gt;&#10;&#9;&#9;&lt;description&gt;Seed of the pseudo random number generator to use when shuffling the data.&lt;/description&gt;&#10;&#9;&#9;&lt;type&gt;int&lt;/type&gt;&#10;        &lt;min&gt;0&lt;/min&gt;&#10;        &lt;max&gt;Integer.MAX_VALUE&lt;/max&gt;&#10;&#9;&#9;&lt;default&gt;0&lt;/default&gt;&#10;&#9;&lt;/parameter&gt;&#10;&#9;&lt;parameter name=&quot;learning_rate&quot; is_keyword=&quot;true&quot;&gt;&#10;&#9;&#9;&lt;description&gt;Learning rate schedule.&lt;/description&gt;&#10;&#9;&#9;&lt;type&gt;string&lt;/type&gt;&#10;&#9;&#9;&lt;value&gt;constant&lt;/value&gt;&#10;&#9;&#9;&lt;value&gt;optimal&lt;/value&gt;&#10;&#9;&#9;&lt;value&gt;invscaling&lt;/value&gt;&#10;&#9;&#9;&lt;default&gt;optimal&lt;/default&gt;&#10;&#9;&lt;/parameter&gt;&#10;    &lt;parameter name=&quot;n_jobs&quot; is_keyword=&quot;true&quot;&gt;&#10;        &lt;description&gt;Number of CPUs to use to do the One Versus All for multi-class problems.&lt;/description&gt;&#10;        &lt;type&gt;int&lt;/type&gt;&#10;        &lt;min&gt;-1&lt;/min&gt;&#10;        &lt;max&gt;64&lt;/max&gt;&#10;        &lt;default&gt;-1&lt;/default&gt;&#10;    &lt;/parameter&gt;&#10;&#9;&lt;parameter name=&quot;eta0&quot; is_keyword=&quot;true&quot;&gt;&#10;&#9;&#9;&lt;description&gt;Initial learning rate.&lt;/description&gt;&#10;&#9;&#9;&lt;type&gt;float&lt;/type&gt;&#10;&#9;&#9;&lt;min&gt;0&lt;/min&gt;&#10;&#9;&#9;&lt;max&gt;Double.POSITIVE_INFINITY&lt;/max&gt;&#10;&#9;&#9;&lt;default&gt;0.01&lt;/default&gt;&#10;&#9;&lt;/parameter&gt;&#10;&#9;&lt;parameter name=&quot;power_t&quot; is_keyword=&quot;true&quot;&gt;&#10;&#9;&#9;&lt;description&gt;Exponent for inverse scaling learning rate.&lt;/description&gt;&#10;&#9;&#9;&lt;type&gt;float&lt;/type&gt;&#10;&#9;&#9;&lt;min&gt;0&lt;/min&gt;&#10;&#9;&#9;&lt;max&gt;Double.POSITIVE_INFINITY&lt;/max&gt;&#10;&#9;&#9;&lt;default&gt;0.5&lt;/default&gt;&#10;&#9;&lt;/parameter&gt;&#10;    &lt;parameter name=&quot;average&quot; is_keyword=&quot;true&quot;&gt;&#10;&#9;&#9;&lt;description&gt;Whether to compute the averaged SGD weights and store the result.&lt;/description&gt;&#10;&#9;&#9;&lt;type&gt;bool&lt;/type&gt;&#10;&#9;&#9;&lt;default&gt;True&lt;/default&gt;&#10;&#9;&lt;/parameter&gt;&#10;&#9;&lt;parameter name=&quot;warm_start&quot; is_keyword=&quot;true&quot;&gt;&#10;&#9;&#9;&lt;description&gt;Whether to reuse the solution of the previous call to fit as initialisation.&lt;/description&gt;&#10;&#9;&#9;&lt;type&gt;bool&lt;/type&gt;&#10;&#9;&#9;&lt;default&gt;True&lt;/default&gt;&#10;&#9;&lt;/parameter&gt;&#10;&#9;&lt;parameter name=&quot;class_weight&quot; is_keyword=&quot;true&quot;&gt;&#10;        &lt;description&gt;Weights associated with classes.&lt;/description&gt;&#10;        &lt;type&gt;string&lt;/type&gt;&#10;        &lt;value&gt;None&lt;/value&gt;&#10;        &lt;value&gt;balanced&lt;/value&gt;&#10;        &lt;default&gt;balanced&lt;/default&gt;&#10;    &lt;/parameter&gt;&#10;&lt;/model&gt;"/>
+      </operator>
+      <operator activated="true" class="store" compatibility="9.4.000-SNAPSHOT" expanded="true" height="68" name="Store" width="90" x="246" y="34">
+        <parameter key="repository_entry" value="SGD Model"/>
+      </operator>
+      <operator activated="true" class="retrieve" compatibility="9.4.000-SNAPSHOT" expanded="true" height="68" name="Retrieve Titanic Training" width="90" x="45" y="391">
+        <parameter key="repository_entry" value="//Samples/data/Titanic Training"/>
+      </operator>
+      <operator activated="true" class="multiply" compatibility="9.4.000-SNAPSHOT" expanded="true" height="103" name="Multiply" width="90" x="313" y="238"/>
+      <operator activated="true" class="concurrency:cross_validation" compatibility="9.3.000" expanded="true" height="145" name="Cross Validation" width="90" x="581" y="238">
+        <parameter key="split_on_batch_attribute" value="false"/>
+        <parameter key="leave_one_out" value="false"/>
+        <parameter key="number_of_folds" value="10"/>
+        <parameter key="sampling_type" value="automatic"/>
+        <parameter key="use_local_random_seed" value="false"/>
+        <parameter key="local_random_seed" value="1992"/>
+        <parameter key="enable_parallel_execution" value="true"/>
+        <process expanded="true">
+          <operator activated="true" class="retrieve" compatibility="9.4.000-SNAPSHOT" expanded="true" height="68" name="Retrieve SGD Model" width="90" x="45" y="238">
+            <parameter key="repository_entry" value="SGD Model"/>
+          </operator>
+          <operator activated="true" class="nominal_to_numerical" compatibility="9.4.000-SNAPSHOT" expanded="true" height="103" name="Nominal to Numerical" width="90" x="45" y="85">
+            <parameter key="return_preprocessing_model" value="false"/>
+            <parameter key="create_view" value="false"/>
+            <parameter key="attribute_filter_type" value="all"/>
+            <parameter key="attribute" value=""/>
+            <parameter key="attributes" value=""/>
+            <parameter key="use_except_expression" value="false"/>
+            <parameter key="value_type" value="nominal"/>
+            <parameter key="use_value_type_exception" value="false"/>
+            <parameter key="except_value_type" value="file_path"/>
+            <parameter key="block_type" value="single_value"/>
+            <parameter key="use_block_type_exception" value="false"/>
+            <parameter key="except_block_type" value="single_value"/>
+            <parameter key="invert_selection" value="false"/>
+            <parameter key="include_special_attributes" value="false"/>
+            <parameter key="coding_type" value="dummy coding"/>
+            <parameter key="use_comparison_groups" value="false"/>
+            <list key="comparison_groups"/>
+            <parameter key="unexpected_value_handling" value="all 0 and warning"/>
+            <parameter key="use_underscore_in_name" value="false"/>
+          </operator>
+          <operator activated="true" class="python_operator_framework:process_python_learner" compatibility="0.0.005-SNAPSHOT" expanded="true" height="82" name="Build Python Model" width="90" x="179" y="85">
+            <parameter key="loss" value="hinge"/>
+            <parameter key="epsilon" value="0.01"/>
+            <parameter key="penalty" value="l2"/>
+            <parameter key="alpha" value="1.0E-4"/>
+            <parameter key="l1_ratio" value="0.15"/>
+            <parameter key="fit_intercept" value="true"/>
+            <parameter key="max_iter" value="1024"/>
+            <parameter key="shuffle" value="true"/>
+            <parameter key="verbose" value="0"/>
+            <parameter key="random_state" value="0"/>
+            <parameter key="learning_rate" value="optimal"/>
+            <parameter key="n_jobs" value="-1"/>
+            <parameter key="eta0" value="0.01"/>
+            <parameter key="power_t" value="0.5"/>
+            <parameter key="average" value="true"/>
+            <parameter key="warm_start" value="false"/>
+            <parameter key="class_weight" value="None"/>
+          </operator>
+          <operator activated="true" class="group_models" compatibility="9.4.000-SNAPSHOT" expanded="true" height="103" name="Group Models" width="90" x="380" y="187"/>
+          <connect from_port="training set" to_op="Nominal to Numerical" to_port="example set input"/>
+          <connect from_op="Retrieve SGD Model" from_port="output" to_op="Build Python Model" to_port="pythonlearner"/>
+          <connect from_op="Nominal to Numerical" from_port="example set output" to_op="Build Python Model" to_port="training set"/>
+          <connect from_op="Nominal to Numerical" from_port="preprocessing model" to_op="Group Models" to_port="models in 1"/>
+          <connect from_op="Build Python Model" from_port="model" to_op="Group Models" to_port="models in 2"/>
+          <connect from_op="Group Models" from_port="model out" to_port="model"/>
+          <portSpacing port="source_training set" spacing="0"/>
+          <portSpacing port="sink_model" spacing="0"/>
+          <portSpacing port="sink_through 1" spacing="0"/>
+        </process>
+        <process expanded="true">
+          <operator activated="true" class="apply_model" compatibility="9.4.000-SNAPSHOT" expanded="true" height="82" name="Apply Model (2)" width="90" x="112" y="34">
+            <list key="application_parameters"/>
+            <parameter key="create_view" value="false"/>
+          </operator>
+          <operator activated="true" class="performance_classification" compatibility="9.4.000-SNAPSHOT" expanded="true" height="82" name="Performance" width="90" x="313" y="34">
+            <parameter key="main_criterion" value="first"/>
+            <parameter key="accuracy" value="true"/>
+            <parameter key="classification_error" value="false"/>
+            <parameter key="kappa" value="false"/>
+            <parameter key="weighted_mean_recall" value="false"/>
+            <parameter key="weighted_mean_precision" value="false"/>
+            <parameter key="spearman_rho" value="false"/>
+            <parameter key="kendall_tau" value="false"/>
+            <parameter key="absolute_error" value="false"/>
+            <parameter key="relative_error" value="false"/>
+            <parameter key="relative_error_lenient" value="false"/>
+            <parameter key="relative_error_strict" value="false"/>
+            <parameter key="normalized_absolute_error" value="false"/>
+            <parameter key="root_mean_squared_error" value="false"/>
+            <parameter key="root_relative_squared_error" value="false"/>
+            <parameter key="squared_error" value="false"/>
+            <parameter key="correlation" value="false"/>
+            <parameter key="squared_correlation" value="false"/>
+            <parameter key="cross-entropy" value="false"/>
+            <parameter key="margin" value="false"/>
+            <parameter key="soft_margin_loss" value="false"/>
+            <parameter key="logistic_loss" value="false"/>
+            <parameter key="skip_undefined_labels" value="true"/>
+            <parameter key="use_example_weights" value="true"/>
+            <list key="class_weights"/>
+          </operator>
+          <connect from_port="model" to_op="Apply Model (2)" to_port="model"/>
+          <connect from_port="test set" to_op="Apply Model (2)" to_port="unlabelled data"/>
+          <connect from_op="Apply Model (2)" from_port="labelled data" to_op="Performance" to_port="labelled data"/>
+          <connect from_op="Performance" from_port="performance" to_port="performance 1"/>
+          <portSpacing port="source_model" spacing="0"/>
+          <portSpacing port="source_test set" spacing="0"/>
+          <portSpacing port="source_through 1" spacing="0"/>
+          <portSpacing port="sink_test set results" spacing="0"/>
+          <portSpacing port="sink_performance 1" spacing="0"/>
+          <portSpacing port="sink_performance 2" spacing="0"/>
+        </process>
+      </operator>
+      <operator activated="true" class="concurrency:cross_validation" compatibility="9.3.000" expanded="true" height="145" name="Validation" width="90" x="380" y="442">
+        <parameter key="split_on_batch_attribute" value="false"/>
+        <parameter key="leave_one_out" value="false"/>
+        <parameter key="number_of_folds" value="10"/>
+        <parameter key="sampling_type" value="stratified sampling"/>
+        <parameter key="use_local_random_seed" value="false"/>
+        <parameter key="local_random_seed" value="1992"/>
+        <parameter key="enable_parallel_execution" value="true"/>
+        <process expanded="true">
+          <operator activated="true" class="nominal_to_numerical" compatibility="9.4.000-SNAPSHOT" expanded="true" height="103" name="Nominal to Numerical (2)" width="90" x="112" y="289">
+            <parameter key="return_preprocessing_model" value="false"/>
+            <parameter key="create_view" value="false"/>
+            <parameter key="attribute_filter_type" value="all"/>
+            <parameter key="attribute" value=""/>
+            <parameter key="attributes" value=""/>
+            <parameter key="use_except_expression" value="false"/>
+            <parameter key="value_type" value="nominal"/>
+            <parameter key="use_value_type_exception" value="false"/>
+            <parameter key="except_value_type" value="file_path"/>
+            <parameter key="block_type" value="single_value"/>
+            <parameter key="use_block_type_exception" value="false"/>
+            <parameter key="except_block_type" value="single_value"/>
+            <parameter key="invert_selection" value="false"/>
+            <parameter key="include_special_attributes" value="false"/>
+            <parameter key="coding_type" value="dummy coding"/>
+            <parameter key="use_comparison_groups" value="false"/>
+            <list key="comparison_groups"/>
+            <parameter key="unexpected_value_handling" value="all 0 and warning"/>
+            <parameter key="use_underscore_in_name" value="false"/>
+          </operator>
+          <operator activated="true" class="h2o:gradient_boosted_trees" compatibility="9.3.001" expanded="true" height="103" name="Gradient Boosted Trees" width="90" x="179" y="34">
+            <parameter key="number_of_trees" value="100"/>
+            <parameter key="reproducible" value="false"/>
+            <parameter key="maximum_number_of_threads" value="4"/>
+            <parameter key="use_local_random_seed" value="false"/>
+            <parameter key="local_random_seed" value="1992"/>
+            <parameter key="maximal_depth" value="10"/>
+            <parameter key="min_rows" value="10.0"/>
+            <parameter key="min_split_improvement" value="0.0"/>
+            <parameter key="number_of_bins" value="20"/>
+            <parameter key="learning_rate" value="0.01"/>
+            <parameter key="sample_rate" value="1.0"/>
+            <parameter key="distribution" value="AUTO"/>
+            <parameter key="early_stopping" value="false"/>
+            <parameter key="stopping_rounds" value="1"/>
+            <parameter key="stopping_metric" value="AUTO"/>
+            <parameter key="stopping_tolerance" value="0.001"/>
+            <parameter key="max_runtime_seconds" value="0"/>
+            <list key="expert_parameters"/>
+          </operator>
+          <operator activated="true" class="group_models" compatibility="9.4.000-SNAPSHOT" expanded="true" height="103" name="Group Models (2)" width="90" x="447" y="391"/>
+          <connect from_port="training set" to_op="Nominal to Numerical (2)" to_port="example set input"/>
+          <connect from_op="Nominal to Numerical (2)" from_port="example set output" to_op="Gradient Boosted Trees" to_port="training set"/>
+          <connect from_op="Nominal to Numerical (2)" from_port="preprocessing model" to_op="Group Models (2)" to_port="models in 1"/>
+          <connect from_op="Gradient Boosted Trees" from_port="model" to_op="Group Models (2)" to_port="models in 2"/>
+          <connect from_op="Group Models (2)" from_port="model out" to_port="model"/>
+          <portSpacing port="source_training set" spacing="0"/>
+          <portSpacing port="sink_model" spacing="0"/>
+          <portSpacing port="sink_through 1" spacing="0"/>
+          <description align="left" color="green" colored="true" height="80" resized="true" width="248" x="37" y="158">In the training phase, a model is built on the current training data set. (90 % of data by default, 10 times)</description>
+        </process>
+        <process expanded="true">
+          <operator activated="true" class="apply_model" compatibility="9.4.000-SNAPSHOT" expanded="true" height="82" name="Apply Model" width="90" x="45" y="34">
+            <list key="application_parameters"/>
+            <parameter key="create_view" value="false"/>
+          </operator>
+          <operator activated="true" class="performance" compatibility="9.4.000-SNAPSHOT" expanded="true" height="82" name="Performance (2)" width="90" x="179" y="34">
+            <parameter key="use_example_weights" value="true"/>
+          </operator>
+          <connect from_port="model" to_op="Apply Model" to_port="model"/>
+          <connect from_port="test set" to_op="Apply Model" to_port="unlabelled data"/>
+          <connect from_op="Apply Model" from_port="labelled data" to_op="Performance (2)" to_port="labelled data"/>
+          <connect from_op="Performance (2)" from_port="performance" to_port="performance 1"/>
+          <connect from_op="Performance (2)" from_port="example set" to_port="test set results"/>
+          <portSpacing port="source_model" spacing="0"/>
+          <portSpacing port="source_test set" spacing="0"/>
+          <portSpacing port="source_through 1" spacing="0"/>
+          <portSpacing port="sink_test set results" spacing="0"/>
+          <portSpacing port="sink_performance 1" spacing="0"/>
+          <portSpacing port="sink_performance 2" spacing="0"/>
+          <description align="left" color="blue" colored="true" height="103" resized="true" width="315" x="38" y="158">The model created in the Training step is applied to the current test set (10 %).&lt;br/&gt;The performance is evaluated and sent to the operator results.</description>
+        </process>
+        <description align="center" color="transparent" colored="false" width="126">A cross-validation evaluating a decision tree model.</description>
+      </operator>
+      <connect from_op="Create Learner Object (2)" from_port="pythonLearner" to_op="Store" to_port="input"/>
+      <connect from_op="Retrieve Titanic Training" from_port="output" to_op="Multiply" to_port="input"/>
+      <connect from_op="Multiply" from_port="output 1" to_op="Cross Validation" to_port="example set"/>
+      <connect from_op="Multiply" from_port="output 2" to_op="Validation" to_port="example set"/>
+      <connect from_op="Cross Validation" from_port="performance 1" to_port="result 2"/>
+      <connect from_op="Validation" from_port="performance 1" to_port="result 1"/>
+      <portSpacing port="source_input 1" spacing="0"/>
+      <portSpacing port="sink_result 1" spacing="0"/>
+      <portSpacing port="sink_result 2" spacing="0"/>
+      <portSpacing port="sink_result 3" spacing="0"/>
+      <description align="center" color="yellow" colored="false" height="105" resized="false" width="180" x="421" y="48">Step 1&lt;br/&gt;Create a learner Object that can be re used anytime you want to to use Label propogation Algorithm&lt;br/&gt;</description>
+    </process>
+  </operator>
+</process>
